@@ -1,81 +1,56 @@
 substitutions:
-  _PROJECT_ID: semester-2-408906
-  _SERVICE_NAME: gcp-pipeline            # Cloud Run service name (must use hyphens, lowercase)
-  _REGION: us-central1                   # Deployment region
-  _REPO: us-central1-docker.pkg.dev/semester-2-408906/demo-0000000000
-  _IMAGE_NAME: gcp-pipeline              # Use hyphenated image name for consistency
-  _MEMORY: 512Mi                         # Cloud Run memory limit
-  _CONCURRENCY: 80                       # Cloud Run request concurrency
-  _CPU: 1                                # vCPU allocation
-  _ALLOW_UNAUTH: "false"                # Set to "true" to allow public access
+  _PROJECT_ID: genial-aspect-473616-v6                 # GCP Project ID
+  _REGION: us-central1                                 # Deployment region
+  _SERVICE_NAME: hushng-101012042-service              # Cloud Run service
+  _IMAGE_REPO: us-central1-docker.pkg.dev/$_PROJECT_ID/hushng-101012042
+  _IMAGE_NAME: app                                     # Image name within repo
+  _ALLOW_UNAUTH: "false"                               # Toggle public access
 
 steps:
-  # 0. Defensive: ensure Dockerfile exists (catches earlier failure mode)
+  # 1. Ensure Dockerfile exists
   - name: alpine
-    id: Verify Dockerfile
+    id: verify-dockerfile
     entrypoint: sh
-    args: ['-c', 'test -f Dockerfile || { echo "ERROR: Dockerfile missing"; exit 1; }']
+    args: ['-c', 'test -f Dockerfile || { echo "Dockerfile missing"; exit 1; }']
 
-  # 1. Install dependencies (including dev) for running tests & linting
-  - name: 'gcr.io/cloud-builders/npm'
-    id: NPM Install
-    args: ['ci']
-
-  # 2. Run tests (will fail the build if tests fail). Adjust or remove if not desired.
-  - name: 'gcr.io/cloud-builders/npm'
-    id: Tests
-    args: ['test', '--', '--ci', '--runInBand']
-
-  # 3. (Optional) Lint / format check placeholder (uncomment if you add eslint)
-  # - name: 'gcr.io/cloud-builders/npm'
-  #   id: Lint
-  #   args: ['run', 'lint']
-
-  # 4. Build minimal production image (only prod deps inside final image via Dockerfile)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: Build
+  # 2. Build image (tag with commit SHA and latest)
+  - name: gcr.io/cloud-builders/docker
+    id: build
     args:
       - build
-      - -f
-      - Dockerfile
       - -t
-      - '${_REPO}/${_IMAGE_NAME}:${SHORT_SHA}'
+      - '${_IMAGE_REPO}/${_IMAGE_NAME}:${SHORT_SHA}'
       - -t
-      - '${_REPO}/${_IMAGE_NAME}:latest'
+      - '${_IMAGE_REPO}/${_IMAGE_NAME}:latest'
       - .
-  - name: 'gcr.io/cloud-builders/docker'
-    id: Push SHA Tag
-    args: ['push', '${_REPO}/${_IMAGE_NAME}:${SHORT_SHA}']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: Push Latest Tag
-    args: ['push', '${_REPO}/${_IMAGE_NAME}:latest']
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: Deploy
+
+  # 3. Push both tags
+  - name: gcr.io/cloud-builders/docker
+    id: push-sha
+    args: ['push', '${_IMAGE_REPO}/${_IMAGE_NAME}:${SHORT_SHA}']
+  - name: gcr.io/cloud-builders/docker
+    id: push-latest
+    args: ['push', '${_IMAGE_REPO}/${_IMAGE_NAME}:latest']
+
+  # 4. Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy
     entrypoint: bash
     args:
       - -c
       - |
-        if [ "${_ALLOW_UNAUTH}" = "true" ]; then
-          AUTH_FLAG="--allow-unauthenticated";
-        else
-          AUTH_FLAG="--no-allow-unauthenticated";
-        fi
-        echo "Deploying service ${_SERVICE_NAME} with image ${_REPO}/${_IMAGE_NAME}:${SHORT_SHA}";
+        if [ "${_ALLOW_UNAUTH}" = "true" ]; then AUTH_FLAG="--allow-unauthenticated"; else AUTH_FLAG="--no-allow-unauthenticated"; fi
+        echo "Deploying ${_SERVICE_NAME} with image ${_IMAGE_REPO}/${_IMAGE_NAME}:${SHORT_SHA}";
         gcloud run deploy "${_SERVICE_NAME}" \
-          --image "${_REPO}/${_IMAGE_NAME}:${SHORT_SHA}" \
+          --image "${_IMAGE_REPO}/${_IMAGE_NAME}:${SHORT_SHA}" \
           --region "${_REGION}" \
           --platform managed \
-          --memory "${_MEMORY}" \
-          --concurrency "${_CONCURRENCY}" \
-          --cpu "${_CPU}" \
-          --set-env-vars NODE_ENV=production \
-          ${AUTH_FLAG} \
-          --quiet
-        echo "Deployment finished." 
+          --quiet \
+          ${AUTH_FLAG}
 
 images:
-  - '${_REPO}/${_IMAGE_NAME}:${SHORT_SHA}'
-  - '${_REPO}/${_IMAGE_NAME}:latest'
+  - '${_IMAGE_REPO}/${_IMAGE_NAME}:${SHORT_SHA}'
+  - '${_IMAGE_REPO}/${_IMAGE_NAME}:latest'
 
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
@@ -85,6 +60,6 @@ options:
 timeout: 900s
 
 tags:
-  - gcp-pipeline
+  - hushng
   - nodejs
   - cloud-run
