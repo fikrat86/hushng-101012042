@@ -5,36 +5,40 @@
 ############################################
 
 steps:
-  - name: gcr.io/cloud-builders/docker
-    id: build
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'build',
-        '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}',
+        '-t',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/anju100959389/app:${SHORT_SHA}',
         '.'
       ]
 
-  - name: gcr.io/cloud-builders/docker
-    id: push
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}']
+  # Step 2: Push image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/anju100959389/app:${SHORT_SHA}'
+      ]
 
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    id: deploy
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       [
-        'run','deploy','hushng-101012042-service',
-        '--image','us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}',
-        '--region','us-central1',
-        '--platform','managed',
+        'run',
+        'deploy',
+        'anju-100959389-service',
+        '--image',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/anju100959389/app:${SHORT_SHA}',
+        '--region',
+        'us-central1',
+        '--platform',
+        'managed',
         '--allow-unauthenticated'
       ]
 
-images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}'
-
-timeout: '900s'
-
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
-  logging: CLOUD_LOGGING_ONLY
