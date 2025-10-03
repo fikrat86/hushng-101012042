@@ -1,63 +1,36 @@
-substitutions:
-  _REGION: "us-central1"
-  _SERVICE_NAME: "hushng-101012042-service"
-  _IMAGE_PATH: "us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app"  # Full repo/image (no tag)
-  _ALLOW_UNAUTH: "false"  # Set to "true" to allow public access
+############################################
+# Minimal Cloud Build config to resolve
+# unmarshalling error. Once this succeeds,
+# we can reintroduce options gradually.
+############################################
 
 steps:
-  # 1. Ensure Dockerfile exists
-  - name: alpine
-    id: verify-dockerfile
-    entrypoint: sh
-    args: ['-c', 'test -f Dockerfile || { echo "Dockerfile missing"; exit 1; }']
-
-  # 2. Build image (SHA + latest)
   - name: gcr.io/cloud-builders/docker
     id: build
     args:
-      - build
-      - -t
-      - '${_IMAGE_PATH}:${SHORT_SHA}'
-      - -t
-      - '${_IMAGE_PATH}:latest'
-      - .
+      [
+        'build',
+        '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}',
+        '.'
+      ]
 
-  # 3. Push tags
   - name: gcr.io/cloud-builders/docker
-    id: push-sha
-    args: ['push', '${_IMAGE_PATH}:${SHORT_SHA}']
-  - name: gcr.io/cloud-builders/docker
-    id: push-latest
-    args: ['push', '${_IMAGE_PATH}:latest']
+    id: push
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}']
 
-  # 4. Deploy to Cloud Run
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: deploy
-    entrypoint: bash
+    entrypoint: gcloud
     args:
-      - -c
-      - |
-        if [ "${_ALLOW_UNAUTH}" = "true" ]; then AUTH_FLAG="--allow-unauthenticated"; else AUTH_FLAG="--no-allow-unauthenticated"; fi
-        echo "Deploying ${_SERVICE_NAME} with image ${_IMAGE_PATH}:${SHORT_SHA}";
-        gcloud run deploy "${_SERVICE_NAME}" \
-          --image "${_IMAGE_PATH}:${SHORT_SHA}" \
-          --region "${_REGION}" \
-          --platform managed \
-          --quiet \
-          ${AUTH_FLAG}
+      [
+        'run','deploy','hushng-101012042-service',
+        '--image','us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}',
+        '--region','us-central1',
+        '--platform','managed',
+        '--allow-unauthenticated'
+      ]
 
 images:
-  - '${_IMAGE_PATH}:${SHORT_SHA}'
-  - '${_IMAGE_PATH}:latest'
-
-options:
-  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
-  logging: CLOUD_LOGGING_ONLY
-  machineType: E2_HIGHCPU_8
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}'
 
 timeout: '900s'
-
-tags:
-  - hushng
-  - nodejs
-  - cloud-run
