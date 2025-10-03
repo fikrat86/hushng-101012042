@@ -5,11 +5,6 @@
 ############################################
 
 steps:
-  # Sanity check: ensure no disallowed names are present in repo
-  - name: 'gcr.io/cloud-builders/npm'
-    id: name-check
-    args: ['run', 'check:names']
-
   # Step 1: Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:

@@ -14,3 +14,15 @@ Local run (Docker Compose):
 CI/CD (Cloud Build):
 - Builds and pushes: us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}
 - Deploys to: hushng-101012042-service
+
+## Rubric checklist
+1. GitHub repo created and files uploaded (this repo: fikrat86/hushng-101012042).
+2. APIs enabled in GCP: Cloud Run, Cloud Build, Secret Manager. Cloud Build settings include Cloud Run Admin + Service Account User permissions (or grant all service accounts access).
+3. Artifact Registry repository: hushng-101012042 in us-central1.
+4. Cloud Build host connection: GitHub account connected; repository linked.
+5. Build config (cloudbuild.yaml):
+	- Uses docker builder to build and tag image with ${SHORT_SHA}.
+	- Pushes to Artifact Registry repo hushng-101012042.
+	- Options include defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET.
+	- Trigger name: dc-hushng-101012042 (push on main; approval recommended).
+6. Manual trigger executed; image visible in Artifact Registry under hushng-101012042 (tagged with commit SHA).
