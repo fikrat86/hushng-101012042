@@ -34,3 +34,7 @@ images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/hushng-101012042/app:${SHORT_SHA}'
 
 timeout: '900s'
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+  logging: CLOUD_LOGGING_ONLY
