@@ -3,7 +3,8 @@ const path = require('path');
 
 const ROOT = process.cwd();
 const DISALLOWED = [/anju100959389/i, /anju-100959389/i];
-const IGNORE_DIRS = new Set(['.git', 'node_modules', '.vscode', '.idea']);
+// Ignore folders that should not be scanned and the scripts folder (to avoid self-matching)
+const IGNORE_DIRS = new Set(['.git', 'node_modules', '.vscode', '.idea', 'scripts']);
 
 function scan(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
